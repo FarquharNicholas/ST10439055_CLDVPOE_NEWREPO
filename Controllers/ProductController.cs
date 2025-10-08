@@ -9,18 +9,18 @@ namespace ST10439055_CLDVPOE.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly IAzureStorageService _storage;
+        private readonly IFunctionsApi _api;
         private readonly ILogger<ProductController> _logger;
 
-        public ProductController(IAzureStorageService storage, ILogger<ProductController> logger)
+        public ProductController(IFunctionsApi api, ILogger<ProductController> logger)
         {
-            _storage = storage;
+            _api = api;
             _logger = logger;
         }
 
         public async Task<IActionResult> Index()
         {
-            var products = await _storage.GetAllEntitiesAsync<Product>();
+            var products = await _api.GetProductsAsync();
             return View(products);
         }
 
@@ -63,14 +63,8 @@ namespace ST10439055_CLDVPOE.Controllers
                         return View(product);
                     }
 
-                    // Upload image if provided
-                    if (imageFile != null && imageFile.Length > 0)
-                    {
-                        var imageUrl = await _storage.UploadImageAsync(imageFile, "product-images");
-                        product.ImageUrl = imageUrl;
-                    }
-
-                    await _storage.AddEntityAsync(product);
+                    // Delegate creation (and optional image) to Function App
+                    await _api.CreateProductAsync(product, imageFile);
                     TempData["Success"] = $"Product '{product.ProductName}' created successfully with price {product.Price:C}!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -86,7 +80,7 @@ namespace ST10439055_CLDVPOE.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var existing = await _storage.GetEntityAsync<Product>("Product", id);
+            var existing = await _api.GetProductAsync(id);
             if (existing == null) return NotFound();
             return View(existing);
         }
@@ -117,27 +111,8 @@ namespace ST10439055_CLDVPOE.Controllers
             {
                 try
                 {
-                    // Get the original product to preserve ETag
-                    var originalProduct = await _storage.GetEntityAsync<Product>("Product", product.RowKey);
-                    if (originalProduct == null)
-                    {
-                        return NotFound();
-                    }
-
-                    // Update properties but keep the original ETag
-                    originalProduct.ProductName = product.ProductName;
-                    originalProduct.Description = product.Description;
-                    originalProduct.Price = product.Price;
-                    originalProduct.StockAvailable = product.StockAvailable;
-
-                    // Upload new image if provided
-                    if (imageFile != null && imageFile.Length > 0)
-                    {
-                        var imageUrl = await _storage.UploadImageAsync(imageFile, "product-images");
-                        originalProduct.ImageUrl = imageUrl;
-                    }
-
-                    await _storage.UpdateEntityAsync(originalProduct);
+                    // Delegate update (and optional new image) to Function App
+                    await _api.UpdateProductAsync(product.RowKey, product, imageFile);
                     TempData["Success"] = "Product updated successfully!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -156,7 +131,7 @@ namespace ST10439055_CLDVPOE.Controllers
         {
             try
             {
-                await _storage.DeleteEntityAsync<Product>("Product", id);
+                await _api.DeleteProductAsync(id);
                 TempData["Success"] = "Product deleted successfully!";
             }
             catch (Exception ex)

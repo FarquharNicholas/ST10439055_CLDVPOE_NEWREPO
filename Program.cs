@@ -1,4 +1,5 @@
 using ST10439055_CLDVPOE.Services;
+using System.Net.Http.Headers;
 
 namespace ST10439055_CLDVPOE
 {
@@ -13,6 +14,26 @@ namespace ST10439055_CLDVPOE
             
             // Register Azure Storage Service
             builder.Services.AddScoped<IAzureStorageService, AzureStorageService>();
+
+            // Register Functions API HttpClient and typed client
+            var functionsBaseUrl = builder.Configuration["Functions:BaseUrl"];
+            var functionsApiKey = builder.Configuration["Functions:ApiKey"];
+
+            if (!string.IsNullOrWhiteSpace(functionsBaseUrl))
+            {
+                builder.Services.AddHttpClient("Functions", client =>
+                {
+                    client.BaseAddress = new Uri(functionsBaseUrl);
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    if (!string.IsNullOrWhiteSpace(functionsApiKey))
+                    {
+                        // Many Azure Functions use x-functions-key header; keep it ready
+                        client.DefaultRequestHeaders.Add("x-functions-key", functionsApiKey);
+                    }
+                });
+
+                builder.Services.AddScoped<IFunctionsApi, FunctionsApiClient>();
+            }
 
             var app = builder.Build();
 

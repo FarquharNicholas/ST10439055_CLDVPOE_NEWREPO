@@ -6,16 +6,16 @@ namespace ST10439055_CLDVPOE.Controllers
 {
     public class CustomerController : Controller
     {
-        private readonly IAzureStorageService _storage;
+        private readonly IFunctionsApi _api;
 
-        public CustomerController(IAzureStorageService storage)
+        public CustomerController(IFunctionsApi api)
         {
-            _storage = storage;
+            _api = api;
         }
 
         public async Task<IActionResult> Index()
         {
-            var customers = await _storage.GetAllEntitiesAsync<Customer>();
+            var customers = await _api.GetCustomersAsync();
             return View(customers);
         }
 
@@ -33,7 +33,7 @@ namespace ST10439055_CLDVPOE.Controllers
             {
                 try
                 {
-                    await _storage.AddEntityAsync(customer);
+                    await _api.CreateCustomerAsync(customer);
                     TempData["Success"] = "Customer created successfully!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -48,7 +48,7 @@ namespace ST10439055_CLDVPOE.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var existing = await _storage.GetEntityAsync<Customer>("Customer", id);
+            var existing = await _api.GetCustomerAsync(id);
             if (existing == null) return NotFound();
             return View(existing);
         }
@@ -61,21 +61,7 @@ namespace ST10439055_CLDVPOE.Controllers
             {
                 try
                 {
-                    // Retrieve the original to preserve ETag and concurrency
-                    var original = await _storage.GetEntityAsync<Customer>("Customer", customer.RowKey);
-                    if (original == null)
-                    {
-                        return NotFound();
-                    }
-
-                    // Copy editable fields
-                    original.Name = customer.Name;
-                    original.Surname = customer.Surname;
-                    original.Username = customer.Username;
-                    original.Email = customer.Email;
-                    original.ShippingAddress = customer.ShippingAddress;
-
-                    await _storage.UpdateEntityAsync(original);
+                    await _api.UpdateCustomerAsync(customer.RowKey, customer);
                     TempData["Success"] = "Customer updated successfully!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -93,7 +79,7 @@ namespace ST10439055_CLDVPOE.Controllers
         {
             try
             {
-                await _storage.DeleteEntityAsync<Customer>("Customer", id);
+                await _api.DeleteCustomerAsync(id);
                 TempData["Success"] = "Customer deleted successfully!";
             }
             catch (Exception ex)

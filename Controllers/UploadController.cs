@@ -6,11 +6,11 @@ namespace ST10439055_CLDVPOE.Controllers
 {
     public class UploadController : Controller
     {
-        private readonly IAzureStorageService _storage;
+        private readonly IFunctionsApi _api;
 
-        public UploadController(IAzureStorageService storage)
+        public UploadController(IFunctionsApi api)
         {
-            _storage = storage;
+            _api = api;
         }
 
         public IActionResult Index()
@@ -28,15 +28,8 @@ namespace ST10439055_CLDVPOE.Controllers
                 {
                     if (model.ProofOfPayment != null && model.ProofOfPayment.Length > 0)
                     {
-                        // Upload to blob storage
-                        var fileName = await _storage.UploadFileAsync(model.ProofOfPayment, "payment-proofs");
-
-                        // Also upload to file share for contracts
-                        await _storage.UploadToFileShareAsync(model.ProofOfPayment, "contracts", "payments");
-
+                        var fileName = await _api.UploadProofOfPaymentAsync(model.ProofOfPayment, model.OrderId, model.CustomerName);
                         TempData["Success"] = $"File uploaded successfully! File name: {fileName}";
-
-                        // Clear the model for a fresh form
                         return View(new FileUploadModel());
                     }
                     else

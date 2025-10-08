@@ -8,24 +8,26 @@ namespace ST10439055_CLDVPOE.Controllers
 {
     public class OrderController : Controller
     {
-        private readonly IAzureStorageService _storage;
+        private readonly IAzureStorageService _storage; // still used for queues if needed
+        private readonly IFunctionsApi _api;
 
-        public OrderController(IAzureStorageService storage)
+        public OrderController(IAzureStorageService storage, IFunctionsApi api)
         {
             _storage = storage;
+            _api = api;
         }
 
         public async Task<IActionResult> Index()
         {
-            var orders = await _storage.GetAllEntitiesAsync<Order>();
+            var orders = await _api.GetOrdersAsync();
             return View(orders);
         }
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var customers = await _storage.GetAllEntitiesAsync<Customer>();
-            var products = await _storage.GetAllEntitiesAsync<Product>();
+            var customers = await _api.GetCustomersAsync();
+            var products = await _api.GetProductsAsync();
             var viewModel = new OrderCreateViewModel
             {
                 Customers = customers,
@@ -43,8 +45,8 @@ namespace ST10439055_CLDVPOE.Controllers
                 try
                 {
                     // Get customer and product details
-                    var customer = await _storage.GetEntityAsync<Customer>("Customer", model.CustomerId);
-                    var product = await _storage.GetEntityAsync<Product>("Product", model.ProductId);
+                    var customer = await _api.GetCustomerAsync(model.CustomerId);
+                    var product = await _api.GetProductAsync(model.ProductId);
 
                     if (customer == null || product == null)
                     {
@@ -62,50 +64,7 @@ namespace ST10439055_CLDVPOE.Controllers
                     }
 
                     // Create order
-                    var order = new Order
-                    {
-                        CustomerId = model.CustomerId,
-                        Username = customer.Username,
-                        ProductId = model.ProductId,
-                        ProductName = product.ProductName,
-                        OrderDate = DateTime.SpecifyKind(model.OrderDate, DateTimeKind.Utc),
-                        Quantity = model.Quantity,
-                        UnitPrice = product.Price,
-                        TotalPrice = product.Price * model.Quantity,
-                        Status = "Submitted" // Always starts as Submitted
-                    };
-
-                    await _storage.AddEntityAsync(order);
-
-                    // Update product stock
-                    product.StockAvailable -= model.Quantity;
-                    await _storage.UpdateEntityAsync(product);
-
-                    // Send queue message for new order
-                    var orderMessage = new
-                    {
-                        OrderId = order.OrderId,
-                        CustomerId = order.CustomerId,
-                        CustomerName = customer.Name + " " + customer.Surname,
-                        ProductName = product.ProductName,
-                        Quantity = order.Quantity,
-                        TotalPrice = order.TotalPrice,
-                        OrderDate = order.OrderDate,
-                        Status = order.Status
-                    };
-                    await _storage.SendMessageAsync("order-notifications", JsonSerializer.Serialize(orderMessage));
-
-                    // Send stock update message
-                    var stockMessage = new
-                    {
-                        ProductId = product.ProductId,
-                        ProductName = product.ProductName,
-                        PreviousStock = product.StockAvailable + model.Quantity,
-                        NewStock = product.StockAvailable,
-                        UpdateBy = "Order System",
-                        UpdateDate = DateTime.UtcNow
-                    };
-                    await _storage.SendMessageAsync("stock-updates", JsonSerializer.Serialize(stockMessage));
+                    var created = await _api.CreateOrderAsync(model.CustomerId, model.ProductId, model.Quantity);
 
                     TempData["Success"] = "Order created successfully!";
                     return RedirectToAction(nameof(Index));
@@ -124,7 +83,7 @@ namespace ST10439055_CLDVPOE.Controllers
         public async Task<IActionResult> Details(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest("Order id is required");
-            var order = await _storage.GetEntityAsync<Order>("Order", id);
+            var order = await _api.GetOrderAsync(id);
             if (order == null) return NotFound();
             return View(order);
         }
@@ -133,7 +92,7 @@ namespace ST10439055_CLDVPOE.Controllers
         public async Task<IActionResult> Edit(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return BadRequest("Order id is required");
-            var order = await _storage.GetEntityAsync<Order>("Order", id);
+            var order = await _api.GetOrderAsync(id);
             if (order == null) return NotFound();
             return View(order);
         }
@@ -146,18 +105,8 @@ namespace ST10439055_CLDVPOE.Controllers
             {
                 try
                 {
-                    // Retrieve original to preserve ETag and concurrency
-                    var original = await _storage.GetEntityAsync<Order>("Order", order.RowKey);
-                    if (original == null)
-                    {
-                        return NotFound();
-                    }
-
-                    // Update allowed fields
-                    original.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
-                    original.Status = order.Status;
-
-                    await _storage.UpdateEntityAsync(original);
+                    // Update status via Functions endpoint
+                    await _api.UpdateOrderStatusAsync(order.RowKey, order.Status);
                     TempData["Success"] = "Order updated successfully!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -181,7 +130,7 @@ namespace ST10439055_CLDVPOE.Controllers
                 }
                 else
                 {
-                    await _storage.DeleteEntityAsync<Order>("Order", id);
+                    await _api.DeleteOrderAsync(id);
                     TempData["Success"] = "Order deleted successfully!";
                 }
             }
@@ -197,7 +146,7 @@ namespace ST10439055_CLDVPOE.Controllers
         {
             try
             {
-                var product = await _storage.GetEntityAsync<Product>("Product", productId);
+                var product = await _api.GetProductAsync(productId);
                 if (product != null)
                 {
                     return Json(new { success = true, price = product.Price, stock = product.StockAvailable, productName = product.ProductName });
@@ -220,29 +169,13 @@ namespace ST10439055_CLDVPOE.Controllers
                     return Json(new { success = false, message = "Invalid request" });
                 }
 
-                var order = await _storage.GetEntityAsync<Order>("Order", request.Id);
+                var order = await _api.GetOrderAsync(request.Id);
                 if (order == null)
                 {
                     return Json(new { success = false, message = "Order not found" });
                 }
 
-                var previousStatus = order.Status;
-                order.Status = request.NewStatus;
-                await _storage.UpdateEntityAsync(order);
-
-                // Send queue message for status update
-                var statusMessage = new
-                {
-                    OrderId = order.OrderId,
-                    CustomerId = order.CustomerId,
-                    CustomerName = order.Username,
-                    ProductName = order.ProductName,
-                    PreviousStatus = previousStatus,
-                    NewStatus = request.NewStatus,
-                    UpdatedDate = DateTime.UtcNow,
-                    UpdatedBy = "System"
-                };
-                await _storage.SendMessageAsync("order-notifications", JsonSerializer.Serialize(statusMessage));
+                await _api.UpdateOrderStatusAsync(order.OrderId, request.NewStatus);
 
                 return Json(new { success = true, message = $"Order status updated to {request.NewStatus}" });
             }
@@ -254,8 +187,8 @@ namespace ST10439055_CLDVPOE.Controllers
 
         private async Task PopulateDropdowns(OrderCreateViewModel model)
         {
-            model.Customers = await _storage.GetAllEntitiesAsync<Customer>();
-            model.Products = await _storage.GetAllEntitiesAsync<Product>();
+            model.Customers = await _api.GetCustomersAsync();
+            model.Products = await _api.GetProductsAsync();
         }
     }
 }
