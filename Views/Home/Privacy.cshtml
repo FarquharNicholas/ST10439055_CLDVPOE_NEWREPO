@@ -1,0 +1,78 @@
+﻿@{
+    ViewData["Title"] = "Privacy & FAQs";
+}
+
+<div class="glass p-4 mb-4">
+    <h2 class="m-0">Privacy</h2>
+    <p class="text-muted mb-0">We respect your data and keep things transparent.</p>
+    </div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-shield-alt"></i> What we collect</h6>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Account info: name, email, username</li>
+                    <li>Order details and delivery address</li>
+                    <li>Basic analytics (anonymized) to improve the app</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-user-lock"></i> How we protect it</h6>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Transport encryption (HTTPS) for all requests</li>
+                    <li>Azure storage access via secure keys</li>
+                    <li>Principle of least privilege for service components</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-question-circle"></i> FAQ</h6>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faq">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q1">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#a1">
+                                Can I delete my account?
+                            </button>
+                        </h2>
+                        <div id="a1" class="accordion-collapse collapse show" data-bs-parent="#faq">
+                            <div class="accordion-body">Yes. Contact support and we’ll remove your data promptly.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">
+                                Why do you store my address?
+                            </button>
+                        </h2>
+                        <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faq">
+                            <div class="accordion-body">We need it to deliver your stationery orders accurately.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="q3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">
+                                Do you sell my data?
+                            </button>
+                        </h2>
+                        <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faq">
+                            <div class="accordion-body">No. Never. We only use your data to provide the service.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

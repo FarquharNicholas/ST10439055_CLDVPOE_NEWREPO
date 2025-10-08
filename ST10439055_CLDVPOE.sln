@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ST10439055_CLDVPOE", "ST10439055_CLDVPOE.csproj", "{91FD2B4D-77DE-463D-B09B-B79089776B02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ABCRetailers.Functions", "..\..\..\Desktop\Code\ABCRetailers.Functions\ABCRetailers.Functions.csproj", "{2B526E97-3510-0974-076F-B4342239668C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{91FD2B4D-77DE-463D-B09B-B79089776B02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91FD2B4D-77DE-463D-B09B-B79089776B02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91FD2B4D-77DE-463D-B09B-B79089776B02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91FD2B4D-77DE-463D-B09B-B79089776B02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B526E97-3510-0974-076F-B4342239668C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B526E97-3510-0974-076F-B4342239668C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B526E97-3510-0974-076F-B4342239668C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B526E97-3510-0974-076F-B4342239668C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5619D524-EB7F-424B-BE5C-576B9689BE26}
+	EndGlobalSection
+EndGlobal
