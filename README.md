@@ -1,2 +1,2 @@
 # ST10439055_CLDVPOE
-https://st10439055cldvpoe-fgg2cja0dscgb3e4.southafricanorth-01.azurewebsites.net
+cldvpoest10439055-egb0cvf2f6f4gwcw.southafricanorth-01.azurewebsites.net
